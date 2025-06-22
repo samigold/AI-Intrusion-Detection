@@ -5,7 +5,7 @@ let currentPage = 1;
 const rowsPerPage = 10;
 let aiEnabled = true; // Flag to toggle AI analysis
 let useOpenAI = false; // Flag to toggle between local AI and OpenAI
-let OPENAI_API_KEY = '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'; // This should be provided by the user securely
+// OpenAI API key is stored only in localStorage, never in the code
 
 // DOM Elements
 const fileUpload = document.getElementById('file-upload');
@@ -63,12 +63,11 @@ document.addEventListener('DOMContentLoaded', initApp);
 
 function initApp() {
   console.log("Initializing application...");
-  
-  // Load saved API key if available
+    // Load saved API key if available
   const savedKey = localStorage.getItem('openai_api_key');
   if (savedKey) {
     openaiKeyInput.value = savedKey;
-    OPENAI_API_KEY = savedKey;
+    // API key is stored in localStorage only
   }
   
   // File upload event listeners
@@ -161,12 +160,10 @@ function initApp() {
       document.body.removeChild(message);
     }, 2000);
   });
-  
-  // Save API key
+    // Save API key
   saveKeyBtn.addEventListener('click', function() {
     const key = openaiKeyInput.value.trim();
     if (key) {
-      OPENAI_API_KEY = key;
       localStorage.setItem('openai_api_key', key);
       
       // Show confirmation
@@ -369,9 +366,8 @@ function performAIAnalysis(data) {
     <span>AI analysis in progress...</span>
   `;
   document.body.appendChild(alertMessage);
-  
-  // Use OpenAI if enabled, otherwise use local analysis
-  if (useOpenAI && OPENAI_API_KEY) {
+    // Use OpenAI if enabled, otherwise use local analysis
+  if (useOpenAI && localStorage.getItem('openai_api_key')) {
     // Use setTimeout to simulate async behavior and avoid blocking UI
     setTimeout(() => {
       performOpenAIAnalysis(data)
@@ -412,7 +408,10 @@ function performAIAnalysis(data) {
 
 // Perform analysis using OpenAI API
 async function performOpenAIAnalysis(data) {
-  if (!OPENAI_API_KEY) {
+  const apiKey = localStorage.getItem('openai_api_key');
+  if (!apiKey || apiKey.trim() === '') {
+    // Show a user-friendly message about the missing API key
+    showRealTimeAlert('OpenAI API key is required. Please enter your API key in the settings.', 'warning');
     throw new Error('OpenAI API key is missing');
   }
   
@@ -438,7 +437,7 @@ Do not include any explanations outside the JSON structure.
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: "gpt-4o",
@@ -524,13 +523,12 @@ function finishAnalysis(data, alertMessage) {
   
   // Show completion message
   const completionMessage = document.createElement('div');
-  completionMessage.className = 'fixed bottom-4 right-4 bg-cyber-gray p-4 rounded-lg shadow-lg border border-cyber-green/30 text-white z-50';
-  completionMessage.innerHTML = `
+  completionMessage.className = 'fixed bottom-4 right-4 bg-cyber-gray p-4 rounded-lg shadow-lg border border-cyber-green/30 text-white z-50';  completionMessage.innerHTML = `
     <div class="flex items-center">
-      <i class="fas fa-${useOpenAI && OPENAI_API_KEY ? 'brain' : 'robot'} text-cyber-green mr-3"></i>
+      <i class="fas fa-${useOpenAI && localStorage.getItem('openai_api_key') ? 'brain' : 'robot'} text-cyber-green mr-3"></i>
       <div>
         <p class="font-medium">AI Analysis Complete</p>
-        <p class="text-sm text-gray-400">Detected ${anomalyCount} anomalies using ${useOpenAI && OPENAI_API_KEY ? 'OpenAI' : 'local'} analysis</p>
+        <p class="text-sm text-gray-400">Detected ${anomalyCount} anomalies using ${useOpenAI && localStorage.getItem('openai_api_key') ? 'OpenAI' : 'local'} analysis</p>
       </div>
     </div>
   `;
@@ -662,8 +660,7 @@ function createBarChart(data) {
   const failedLogins = data.filter(entry => 
     entry.action === 'login_attempt' && entry.success === false
   );
-  
-  // Count failed attempts by IP
+    // Count failed attempts by IP
   const ipCounts = {};
   failedLogins.forEach(entry => {
     ipCounts[entry.ip] = (ipCounts[entry.ip] || 0) + 1;
@@ -1839,10 +1836,9 @@ async function sendAiChatMessage() {
   `;
   aiChatMessages.appendChild(typingIndicator);
   aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
-  
-  // Process the message
+    // Process the message
   let response;
-  if (useOpenAI && OPENAI_API_KEY) {
+  if (useOpenAI && localStorage.getItem('openai_api_key')) {
     // Try to use OpenAI
     try {
       response = await getOpenAIChatResponse(userInput);
@@ -1879,12 +1875,18 @@ function addChatMessage(message, sender) {
 }
 
 async function getOpenAIChatResponse(message) {
+  const apiKey = localStorage.getItem('openai_api_key');
+  if (!apiKey || apiKey.trim() === '') {
+    showRealTimeAlert('OpenAI API key is required. Please enter your API key in the settings.', 'warning');
+    throw new Error('OpenAI API key is missing');
+  }
+
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: "gpt-4o",
@@ -1931,7 +1933,7 @@ function getLocalAIChatResponse(message) {
     return "Cybersecurity best practices include: implementing strong access controls, keeping systems patched and updated, using encryption for sensitive data, employing network segmentation, training users regularly, monitoring systems continuously, and having incident response plans ready.";
   } else {
     return "That's an interesting cybersecurity question. While I don't have specific information on that topic in my local database, I recommend following these general principles: use strong authentication, maintain least privilege access, keep systems updated, monitor for unusual activity, and have a documented security policy. For more specific guidance, consider consulting the NIST Cybersecurity Framework or OWASP guidelines.";
-  }
+ }
 }
 
 // Simple version of critical threat detection (fallback if additionalFunctions isn't available)

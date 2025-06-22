@@ -350,9 +350,9 @@ function showRealTimeAlert(message, type = 'warning') {
 // Enhanced OpenAI analysis
 async function performOpenAIAnalysis(data) {
   const openaiKeyInput = document.getElementById('openai-key');
-  const OPENAI_API_KEY = openaiKeyInput.value.trim() || localStorage.getItem('openai_api_key');
+  const apiKey = openaiKeyInput.value.trim() || localStorage.getItem('openai_api_key');
   
-  if (!OPENAI_API_KEY) {
+  if (!apiKey) {
     throw new Error('OpenAI API key is missing');
   }
   
@@ -385,12 +385,11 @@ ${JSON.stringify(batch, null, 2)}
 
 Respond with ONLY a valid JSON array containing the logs with your analysis added.`;
 
-    try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    try {      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           model: "gpt-4o",
@@ -856,16 +855,15 @@ async function sendAiChatMessage() {
   `;
   aiChatMessages.appendChild(typingIndicator);
   aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
-  
-  // Process the message
+    // Process the message
   let response;
   const useOpenAI = openaiToggle.checked;
-  const OPENAI_API_KEY = openaiKeyInput.value.trim() || localStorage.getItem('openai_api_key');
+  const apiKey = openaiKeyInput.value.trim() || localStorage.getItem('openai_api_key');
   
-  if (useOpenAI && OPENAI_API_KEY) {
+  if (useOpenAI && apiKey) {
     // Try to use OpenAI
     try {
-      response = await getOpenAIChatResponse(userInput, OPENAI_API_KEY);
+      response = await getOpenAIChatResponse(userInput, apiKey);
     } catch (error) {
       console.error('OpenAI chat error:', error);
       response = getLocalAIChatResponse(userInput);

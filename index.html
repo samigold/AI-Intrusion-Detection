@@ -166,16 +166,19 @@
                 <span class="ms-3 text-sm font-medium text-gray-300">Use OpenAI</span>
               </label>
               <i class="fas fa-info-circle ml-2 text-gray-500 hover:text-cyber-green cursor-pointer" title="Uses OpenAI's GPT model for advanced anomaly detection"></i>
-            </div>
-            
+            </div>            
             <div id="openai-key-container" class="hidden">
               <div class="flex items-center">
                 <input type="password" id="openai-key" placeholder="Enter OpenAI API Key" class="w-full px-3 py-2 bg-cyber-dark border border-cyber-green/20 rounded-lg text-sm text-gray-300 focus:outline-none focus:border-cyber-green">
                 <button id="save-key-btn" class="ml-2 px-3 py-2 bg-cyber-dark text-cyber-green rounded-lg border border-cyber-green/30 hover:bg-cyber-green/10" title="Save API Key">
                   <i class="fas fa-save"></i>
                 </button>
+              </div>              <div class="text-xs text-gray-500 mt-1">
+                <p>Your API key is stored locally in your browser and never sent to our servers</p>
+                <p class="mt-1 text-yellow-500"><i class="fas fa-shield-alt mr-1"></i> Security tip: Never share your API key or commit it to public repositories</p>
+                <p class="mt-1 text-gray-400"><i class="fas fa-info-circle mr-1"></i> Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" class="text-cyber-green hover:underline">OpenAI's platform</a></p>
+                <p class="mt-1 text-red-400"><i class="fas fa-exclamation-triangle mr-1"></i> Warning: API usage may incur charges to your OpenAI account</p>
               </div>
-              <p class="text-xs text-gray-500 mt-1">Your API key is stored locally and never sent to our servers</p>
             </div>
             
             <button id="analyze-btn" class="w-full md:w-auto px-6 py-3 bg-cyber-green text-cyber-dark font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-cyber-green-dark" disabled>

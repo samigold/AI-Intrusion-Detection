@@ -274,9 +274,9 @@ async function sendAiChatMessage() {
   aiChatMessages.appendChild(typingIndicator);
   aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
   
-  // Process the message
-  let response;
-  if (useOpenAI && OPENAI_API_KEY) {
+  // Process the message  let response;
+  const apiKey = localStorage.getItem('openai_api_key');
+  if (useOpenAI && apiKey) {
     // Try to use OpenAI
     try {
       response = await getOpenAIChatResponse(userInput);
@@ -313,12 +313,18 @@ function addChatMessage(message, sender) {
 }
 
 async function getOpenAIChatResponse(message) {
+  const apiKey = localStorage.getItem('openai_api_key');
+  if (!apiKey || apiKey.trim() === '') {
+    showRealTimeAlert('OpenAI API key is required. Please enter your API key in the settings.', 'warning');
+    throw new Error('OpenAI API key is missing');
+  }
+
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: "gpt-4o",
