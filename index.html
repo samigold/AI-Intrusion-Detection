@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intrusion Detection Visualizer</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- PDF Generation Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    // Configure Tailwind with custom colors
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'cyber-dark': '#121212',
+            'cyber-gray': '#1e2023',
+            'cyber-green': '#00ff8c',
+            'cyber-green-dark': '#00cc71',
+            'cyber-blue': '#0a84ff',
+            'cyber-red': '#ff3b30',
+          }
+        }
+      }
+    }
+  </script>  <style type="text/css">
+    .chart-container {
+      position: relative;
+      height: 250px;
+      width: 100%;
+    }
+    
+    /* Custom scrollbar for the data table */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #1e2023;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #00cc71;
+      border-radius: 4px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #00ff8c;
+    }
+    
+    /* Real-time alert animations */
+    .translate-x-full {
+      transform: translateX(100%);
+    }
+    
+    /* Progress bar animation */
+    .progress-bar {
+      width: 100%;
+    }
+    
+    /* Rotate animation for education toggles */
+    .rotate-180 {
+      transform: rotate(180deg);
+    }
+    
+    /* Animation for typing indicator */
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.5;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+    
+    .animate-pulse {
+      animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    .delay-75 {
+      animation-delay: 0.75s;
+    }
+    
+    .delay-150 {
+      animation-delay: 1.5s;
+    }
+    
+    /* Tooltip styling */
+    .tooltip {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .tooltip .tooltip-text {
+      visibility: hidden;
+      background-color: #1e2023;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 8px 12px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 200px;
+      border: 1px solid #00ff8c40;
+    }
+    
+    .tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-cyber-dark text-gray-200 min-h-screen">
+  <!-- Header Section -->
+  <header class="bg-cyber-gray p-6 shadow-lg border-b border-cyber-green/20">
+    <div class="container mx-auto">
+      <h1 class="text-3xl md:text-4xl font-bold text-cyber-green">Intrusion Detection Visualizer</h1>
+      <p class="text-gray-400 mt-2">Powered by AI – Analyze and Visualize Network Events</p>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto p-4 md:p-6">
+    <!-- Upload Section -->
+    <section class="mb-10">
+      <div class="bg-cyber-gray rounded-lg p-6 shadow-lg border border-cyber-green/20">
+        <h2 class="text-xl font-semibold mb-4 text-cyber-green">Upload Network Logs</h2>
+        <div class="flex flex-col md:flex-row items-center gap-4">
+          <div class="w-full">
+            <label for="file-upload" class="flex items-center justify-center w-full h-32 px-4 transition bg-cyber-dark border-2 border-dashed border-cyber-green/40 rounded-lg appearance-none cursor-pointer hover:border-cyber-green focus:outline-none">
+              <div class="flex flex-col items-center space-y-2">
+                <i class="fas fa-cloud-upload-alt text-3xl text-cyber-green"></i>
+                <span class="text-sm text-gray-400">Drag and drop your JSON file here or click to browse</span>
+              </div>
+              <input id="file-upload" type="file" class="hidden" accept=".json" />
+            </label>
+          </div>
+          <div class="w-full md:w-auto flex flex-col gap-3">
+            <div class="flex items-center">
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="ai-toggle" class="sr-only peer" checked>
+                <div class="relative w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-cyber-green rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyber-green"></div>
+                <span class="ms-3 text-sm font-medium text-gray-300">Enable AI Analysis</span>
+              </label>
+              <i class="fas fa-info-circle ml-2 text-gray-500 hover:text-cyber-green cursor-pointer" title="AI will analyze the logs to automatically detect suspicious patterns"></i>
+            </div>
+            
+            <div class="flex items-center">
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="openai-toggle" class="sr-only peer">
+                <div class="relative w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-cyber-green rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyber-green"></div>
+                <span class="ms-3 text-sm font-medium text-gray-300">Use OpenAI</span>
+              </label>
+              <i class="fas fa-info-circle ml-2 text-gray-500 hover:text-cyber-green cursor-pointer" title="Uses OpenAI's GPT model for advanced anomaly detection"></i>
+            </div>
+            
+            <div id="openai-key-container" class="hidden">
+              <div class="flex items-center">
+                <input type="password" id="openai-key" placeholder="Enter OpenAI API Key" class="w-full px-3 py-2 bg-cyber-dark border border-cyber-green/20 rounded-lg text-sm text-gray-300 focus:outline-none focus:border-cyber-green">
+                <button id="save-key-btn" class="ml-2 px-3 py-2 bg-cyber-dark text-cyber-green rounded-lg border border-cyber-green/30 hover:bg-cyber-green/10" title="Save API Key">
+                  <i class="fas fa-save"></i>
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Your API key is stored locally and never sent to our servers</p>
+            </div>
+            
+            <button id="analyze-btn" class="w-full md:w-auto px-6 py-3 bg-cyber-green text-cyber-dark font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-cyber-green-dark" disabled>
+              <i class="fas fa-chart-line mr-2"></i>Analyze Data
+            </button>
+          </div>
+        </div>
+        <div id="file-info" class="mt-4 text-sm text-gray-400 hidden">
+          <p><span class="text-cyber-green"><i class="fas fa-file-alt mr-2"></i>File selected:</span> <span id="file-name"></span></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dashboard Section - Initially Hidden -->
+    <section id="dashboard" class="hidden">
+      <!-- Export and Navigation Buttons -->
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div class="flex gap-2">
+          <button id="export-pdf-btn" class="px-4 py-2 bg-cyber-blue text-white rounded-lg shadow-md hover:bg-blue-600 transition-colors flex items-center">
+            <i class="fas fa-file-pdf mr-2"></i>Export PDF
+          </button>
+          <button id="export-json-btn" class="px-4 py-2 bg-cyber-gray text-white rounded-lg shadow-md hover:bg-gray-700 transition-colors flex items-center">
+            <i class="fas fa-file-code mr-2"></i>Export JSON
+          </button>
+        </div>
+        <div class="flex border border-cyber-green/20 rounded-lg overflow-hidden">
+          <button id="tab-vis" class="px-4 py-2 bg-cyber-green text-cyber-dark font-medium">
+            <i class="fas fa-chart-line mr-2"></i>Visualization
+          </button>
+          <button id="tab-intel" class="px-4 py-2 bg-cyber-gray text-white hover:bg-cyber-gray/80">
+            <i class="fas fa-globe mr-2"></i>IP Intelligence
+          </button>
+          <button id="tab-edu" class="px-4 py-2 bg-cyber-gray text-white hover:bg-cyber-gray/80">
+            <i class="fas fa-graduation-cap mr-2"></i>Education
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Content Areas -->
+      <div id="tab-content-vis" class="tab-content">
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-cyber-gray rounded-lg p-4 shadow-lg border border-cyber-green/20">
+            <h3 class="text-gray-400 text-sm font-medium">Total Events</h3>
+            <p class="text-2xl font-bold text-white mt-1" id="total-events">0</p>
+          </div>
+          <div class="bg-cyber-gray rounded-lg p-4 shadow-lg border border-cyber-green/20">
+            <h3 class="text-gray-400 text-sm font-medium">Anomalies Detected</h3>
+            <p class="text-2xl font-bold text-cyber-red mt-1" id="anomalies-count">0</p>
+          </div>
+          <div class="bg-cyber-gray rounded-lg p-4 shadow-lg border border-cyber-green/20">
+            <h3 class="text-gray-400 text-sm font-medium">Unique IP Addresses</h3>
+            <p class="text-2xl font-bold text-cyber-blue mt-1" id="unique-ips">0</p>
+          </div>
+          <div class="bg-cyber-gray rounded-lg p-4 shadow-lg border border-cyber-green/20">
+            <h3 class="text-gray-400 text-sm font-medium">Failed Login Attempts</h3>
+            <p class="text-2xl font-bold text-cyber-red mt-1" id="failed-logins">0</p>
+          </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <!-- Bar Chart -->
+          <div class="bg-cyber-gray rounded-lg p-4 shadow-lg border border-cyber-green/20">
+            <h3 class="text-lg font-medium mb-4 text-white">Failed Login Attempts by IP</h3>
+            <div class="chart-container">
+              <canvas id="bar-chart"></canvas>
+            </div>
+          </div>
+          
+          <!-- Pie Chart -->
+          <div class="bg-cyber-gray rounded-lg p-4 shadow-lg border border-cyber-green/20">
+            <h3 class="text-lg font-medium mb-4 text-white">Normal vs Anomalous Events</h3>
+            <div class="chart-container">
+              <canvas id="pie-chart"></canvas>
+            </div>
+          </div>
+          
+          <!-- Timeline Chart -->
+          <div class="bg-cyber-gray rounded-lg p-4 shadow-lg border border-cyber-green/20">
+            <h3 class="text-lg font-medium mb-4 text-white">Login Attempts Timeline</h3>
+            <div class="chart-container">
+              <canvas id="timeline-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="bg-cyber-gray rounded-lg p-4 shadow-lg border border-cyber-green/20">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-white">Log Entries</h3>
+            <div class="relative">
+              <input id="table-search" type="text" placeholder="Search logs..." class="px-4 py-2 bg-cyber-dark border border-cyber-green/20 rounded-lg text-sm text-gray-300 focus:outline-none focus:border-cyber-green">
+              <i class="fas fa-search absolute right-3 top-2.5 text-gray-500"></i>
+            </div>
+          </div>
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="min-w-full divide-y divide-gray-700">
+              <thead class="bg-cyber-dark">
+                <tr>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Timestamp</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">IP Address</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Port</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Action</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Success</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Details</th>
+                </tr>
+              </thead>
+              <tbody id="log-table-body" class="bg-cyber-gray divide-y divide-gray-700">
+                <!-- Table rows will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-4 flex justify-between items-center text-sm text-gray-400">
+            <div>
+              <p>Showing <span id="visible-rows">0</span> of <span id="total-rows">0</span> entries</p>
+            </div>
+            <div class="flex space-x-2">            <button id="prev-page" class="px-3 py-1 bg-cyber-dark rounded border border-cyber-green/20 disabled:opacity-50" title="Previous page">
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button id="next-page" class="px-3 py-1 bg-cyber-dark rounded border border-cyber-green/20 disabled:opacity-50" title="Next page">
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IP Intelligence Tab -->
+      <div id="tab-content-intel" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <!-- World Map -->
+          <div class="lg:col-span-2 bg-cyber-gray rounded-lg p-4 shadow-lg border border-cyber-green/20">
+            <h3 class="text-lg font-medium mb-4 text-white">Threat Map</h3>
+            <div id="map-container" class="h-96 w-full bg-cyber-dark/50 rounded-lg">
+              <div id="map" class="h-full w-full"></div>
+            </div>
+          </div>
+          
+          <!-- IP Details -->
+          <div class="bg-cyber-gray rounded-lg p-4 shadow-lg border border-cyber-green/20">
+            <h3 class="text-lg font-medium mb-4 text-white">IP Intelligence</h3>
+            <div class="mb-4">
+              <input id="ip-lookup-input" type="text" placeholder="Enter IP to lookup..." class="w-full px-4 py-2 bg-cyber-dark border border-cyber-green/20 rounded-lg text-sm text-gray-300 focus:outline-none focus:border-cyber-green">
+              <button id="ip-lookup-btn" class="mt-2 w-full px-4 py-2 bg-cyber-green text-cyber-dark font-medium rounded-lg transition-colors hover:bg-cyber-green-dark">
+                <i class="fas fa-search mr-2"></i>Lookup IP
+              </button>
+            </div>
+            <div id="ip-details" class="bg-cyber-dark p-4 rounded-lg text-sm">
+              <p class="text-gray-400 text-center">Enter an IP address to view intelligence data</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- IP History Table -->
+        <div class="bg-cyber-gray rounded-lg p-4 shadow-lg border border-cyber-green/20">
+          <h3 class="text-lg font-medium mb-4 text-white">IP Activity History</h3>
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="min-w-full divide-y divide-gray-700">
+              <thead class="bg-cyber-dark">
+                <tr>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">IP Address</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Location</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Activity Count</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Failed Logins</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Last Seen</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Threat Level</th>
+                </tr>
+              </thead>
+              <tbody id="ip-history-table" class="bg-cyber-gray divide-y divide-gray-700">
+                <!-- IP history will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Education Tab -->
+      <div id="tab-content-edu" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <!-- Educational Content -->
+          <div class="lg:col-span-2 bg-cyber-gray rounded-lg p-6 shadow-lg border border-cyber-green/20">
+            <h3 class="text-xl font-medium mb-4 text-cyber-green">Cybersecurity Education Hub</h3>
+            
+            <!-- Accordion for educational content -->
+            <div class="space-y-4">
+              <!-- Brute Force Attacks -->
+              <div class="edu-section">
+                <button class="edu-toggle w-full flex justify-between items-center p-4 bg-cyber-dark rounded-lg hover:bg-cyber-dark/80 transition-colors">
+                  <span class="font-medium text-white"><i class="fas fa-shield-alt mr-2 text-cyber-green"></i>Brute Force Attacks</span>
+                  <i class="fas fa-chevron-down text-cyber-green transition-transform"></i>
+                </button>
+                <div class="edu-content hidden mt-2 p-4 bg-cyber-dark/30 rounded-lg text-gray-300">
+                  <p class="mb-4">Brute force attacks involve repeatedly trying different passwords to gain unauthorized access to systems.</p>
+                  <h4 class="text-cyber-green font-medium mb-2">Warning Signs:</h4>
+                  <ul class="list-disc pl-5 mb-4 space-y-1">
+                    <li>Multiple failed login attempts from the same IP</li>
+                    <li>Login attempts at unusual hours</li>
+                    <li>Sequential or patterned login attempts</li>
+                  </ul>
+                  <h4 class="text-cyber-green font-medium mb-2">Prevention Measures:</h4>
+                  <ul class="list-disc pl-5 space-y-1">
+                    <li>Implement account lockout policies</li>
+                    <li>Use strong, unique passwords and multi-factor authentication</li>
+                    <li>Limit login attempts and implement progressive delays</li>
+                    <li>Monitor and alert on suspicious login patterns</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <!-- Unusual Port Activity -->
+              <div class="edu-section">
+                <button class="edu-toggle w-full flex justify-between items-center p-4 bg-cyber-dark rounded-lg hover:bg-cyber-dark/80 transition-colors">
+                  <span class="font-medium text-white"><i class="fas fa-ethernet mr-2 text-cyber-green"></i>Unusual Port Activity</span>
+                  <i class="fas fa-chevron-down text-cyber-green transition-transform"></i>
+                </button>
+                <div class="edu-content hidden mt-2 p-4 bg-cyber-dark/30 rounded-lg text-gray-300">
+                  <p class="mb-4">Unusual port activity can indicate scanning, unauthorized services, or malware communication.</p>
+                  <h4 class="text-cyber-green font-medium mb-2">Common Risky Ports:</h4>
+                  <ul class="list-disc pl-5 mb-4 space-y-1">
+                    <li>Port 22 (SSH) - Target for brute force attacks</li>
+                    <li>Port 3389 (RDP) - Common target for ransomware</li>
+                    <li>Ports 137-139, 445 (SMB) - Exploited by worms like WannaCry</li>
+                    <li>Unusual high ports - May indicate backdoors or C2 servers</li>
+                  </ul>
+                  <h4 class="text-cyber-green font-medium mb-2">Best Practices:</h4>
+                  <ul class="list-disc pl-5 space-y-1">
+                    <li>Close unnecessary ports and use firewalls</li>
+                    <li>Implement proper network segmentation</li>
+                    <li>Monitor for connections to unusual ports or destinations</li>
+                    <li>Use VPNs for remote access instead of exposing internal services</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <!-- Intrusion Prevention -->
+              <div class="edu-section">
+                <button class="edu-toggle w-full flex justify-between items-center p-4 bg-cyber-dark rounded-lg hover:bg-cyber-dark/80 transition-colors">
+                  <span class="font-medium text-white"><i class="fas fa-lock mr-2 text-cyber-green"></i>Intrusion Prevention</span>
+                  <i class="fas fa-chevron-down text-cyber-green transition-transform"></i>
+                </button>
+                <div class="edu-content hidden mt-2 p-4 bg-cyber-dark/30 rounded-lg text-gray-300">
+                  <p class="mb-4">A comprehensive approach to network security can help prevent intrusions before they occur.</p>
+                  <h4 class="text-cyber-green font-medium mb-2">Key Strategies:</h4>
+                  <ul class="list-disc pl-5 mb-4 space-y-1">
+                    <li>Keep all systems patched and updated</li>
+                    <li>Implement the principle of least privilege</li>
+                    <li>Use network segmentation and zero trust architecture</li>
+                    <li>Deploy intrusion detection and prevention systems</li>
+                    <li>Conduct regular security assessments and penetration tests</li>
+                  </ul>
+                  <h4 class="text-cyber-green font-medium mb-2">Advanced Measures:</h4>
+                  <ul class="list-disc pl-5 space-y-1">
+                    <li>Implement behavioral analytics to detect anomalies</li>
+                    <li>Use deception technology (honeypots, honeyfiles)</li>
+                    <li>Deploy AI-powered threat hunting tools</li>
+                    <li>Establish a security operations center (SOC)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- AI Assistant -->
+          <div class="bg-cyber-gray rounded-lg p-4 shadow-lg border border-cyber-green/20">
+            <h3 class="text-lg font-medium mb-4 text-white">AI Security Assistant</h3>
+            <div class="bg-cyber-dark rounded-lg p-4 h-[calc(100%-4rem)] flex flex-col">
+              <div id="ai-chat-messages" class="flex-grow overflow-y-auto custom-scrollbar mb-4 space-y-3">
+                <div class="flex">
+                  <div class="bg-cyber-green/20 rounded-lg p-2 max-w-[85%]">
+                    <p class="text-sm text-white">Hello! I'm your AI Security Assistant. Ask me any cybersecurity questions related to intrusion detection, network security, or best practices.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="flex">
+                <input id="ai-chat-input" type="text" placeholder="Ask a cybersecurity question..." class="flex-grow px-4 py-2 bg-cyber-gray border border-cyber-green/20 rounded-l-lg text-sm text-gray-300 focus:outline-none focus:border-cyber-green">                <button id="ai-chat-send" class="px-4 py-2 bg-cyber-green text-cyber-dark font-medium rounded-r-lg transition-colors hover:bg-cyber-green-dark" title="Send message">
+                  <i class="fas fa-paper-plane"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Data Message -->
+      <section id="no-data" class="flex flex-col items-center justify-center py-20">
+        <div class="text-center">
+          <i class="fas fa-chart-area text-6xl text-gray-700 mb-4"></i>
+          <h2 class="text-2xl font-bold text-gray-400 mb-2">No Data to Visualize</h2>
+          <p class="text-gray-500 mb-6">Upload a JSON file with network logs to see visualizations and analysis</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-cyber-gray p-4 border-t border-cyber-green/20 mt-10">
+    <div class="container mx-auto text-center text-gray-500 text-sm">
+      <p>AI-powered Intrusion Detection Visualizer &copy; 2025</p>
+    </div>
+  </footer>
+
+  <!-- Modal for log details -->
+  <div id="log-detail-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+    <div class="bg-cyber-gray rounded-lg shadow-xl max-w-2xl w-full mx-4 border border-cyber-green/30">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h3 class="text-lg font-medium text-white">Log Entry Details</h3>        <button id="close-modal" class="text-gray-400 hover:text-white" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <pre id="log-detail-content" class="bg-cyber-dark p-4 rounded-lg text-gray-300 overflow-x-auto custom-scrollbar text-sm"></pre>
+      </div>
+      <div class="p-4 border-t border-gray-700 flex justify-end">
+        <button id="close-modal-btn" class="px-4 py-2 bg-cyber-green text-cyber-dark rounded hover:bg-cyber-green-dark">Close</button>
+      </div>
+    </div>
+  </div>  <!-- JavaScript -->
+  <script>
+    // Global object to share variables between files
+    window.intrusionApp = {
+      mapInitialized: false,
+      map: null,
+      markers: [],
+      ipCache: {}
+    };
+  </script>
+  <script src="./additional-functions.js"></script>
+  <script src="./enhanced-features.js"></script>
+  <script src="./script.js"></script>
+</body>
+</html>

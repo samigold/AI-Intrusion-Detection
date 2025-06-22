@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Open Intrusion Detection Visualizer",
+			"type": "shell",
+			"command": "powershell -Command \"Start-Process 'msedge' -ArgumentList 'file:///C:/Users/Samigold''s Pc/Desktop/intrusion/index.html'\"",
+			"group": "none",
+			"isBackground": true
+		}
+	]
+}
